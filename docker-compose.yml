@@ -1,0 +1,41 @@
+networks:
+    ais-vue:
+
+services:
+    # Приложение books в проекте
+    books-app:
+        build: . # Указываем путь до Dockerfile
+        ports:
+            - '8000:8000'
+        environment: # Вводим credentials от PostgreSQL
+            - PG_USER=postgres
+            - PG_PASSWORD=postgres
+            - PG_DB=postgres
+            - PG_PORT=5432
+            - PG_HOST=pg-db
+        depends_on: # Пусть Django (DRF) загружается только когда работает !исправно! PostgreSQL
+            pg-db:
+                condition: service_healthy
+        networks:
+            - ais-vue
+    # Настройка PostgreSQL
+    pg-db:
+        image: postgres:12-alpine
+        environment: # Вводим credentials от PostgreSQL
+            - POSTGRES_DB=postgres
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+        ports:
+            - '5435:5432'
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        networks:
+            - ais-vue
+        healthcheck: # Проверка на исправность работы БД
+            test: ['CMD-SHELL', 'pg_isready -U postgres']
+            interval: 10s
+            retries: 5
+            start_period: 5s
+
+volumes:
+    pgdata: {}
